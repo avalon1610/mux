@@ -15,6 +15,7 @@ public:
         nPort = 0;
     }
     void StartServer(UINT);
+    bool DataSend(int aIndex,unsigned char *Msg,unsigned int size);
 protected:
     bool StartNetwork(UINT NumberOfThreads);
     inline void SetPort(UINT Port)

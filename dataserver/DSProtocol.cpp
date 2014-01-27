@@ -19,9 +19,7 @@ void DataServerLogin(DServerManager *thisManager,int aIndex,SDHP_SERVERINFO *Msg
     ConnPool *cp = ConnPool::GetInstance();
     if (cp != NULL && cp->ExecFormat("SELECT ItemCount FROM GameServerInfo WHERE Number=0"))
     {
-        cp->Fetch();
         Result.ItemCount = cp->GetInt("ItemCount");
     }
-    cp->Clear();
     thisManager->DataSend(aIndex,(byte *)&Result,Result.h.Size);
 };

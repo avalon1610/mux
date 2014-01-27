@@ -272,3 +272,7 @@ void IOCP::StartServer(UINT SrvType)
     }
 
 }
+
+bool IOCP::DataSend(int aIndex,unsigned char *Msg,unsigned int size)
+{
+}

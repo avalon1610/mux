@@ -184,9 +184,10 @@ void ConnPool::DestoryConnection(Connection *conn)
 bool ConnPool::Exec(const char *query)
 {
     Clear();
+    Connection *conn;
     try
     {
-        Connection *conn = GetConnection();
+        conn = GetConnection();
         stmt = conn->createStatement();
 
         LOG(info) << "[SQL] " << query;
@@ -194,16 +195,36 @@ bool ConnPool::Exec(const char *query)
     }
     catch (SQLException &e)
     {
-        LOG(error) << "[SQL] error code:" << e.getErrorCode()
+        LOG(error) << "[SQL] exec error:" << e.getErrorCode()
             << "SQLState: " << e.getSQLState();
         ReleaseConnection(conn);
         return false;
     }
-
     ReleaseConnection(conn);
     return true;
 }
+string ConnPool::GetString(const char *col)
+{
+}
 
-
+int ConnPool::GetInt(const char *col)
+{
+    if (res == NULL)
+        return QUERY_ERROR;
+    if (res->getRow() == 0)
+        return QUERY_NO_COLUMN;
+    int result;
+    try
+    {
+        result = res->getInt(col);
+    }
+    catch (SQLException &e)
+    {
+        LOG(error) << "[SQL] getint error:" << e.getErrorCode()
+            << "col:" << col;
+        result = QUERY_NULL;
+    }
+    return result;
+}
 
 
