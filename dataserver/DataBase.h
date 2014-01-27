@@ -2,6 +2,10 @@
 #define _DATA_BASE_H
 #include <mysql_connection.h>
 #include <mysql_driver.h>
+#include <cppconn/driver.h>
+#include <cppconn/exception.h>
+#include <cppconn/resultset.h>
+#include <cppconn/statement.h>
 #include <string>
 #include <list>
 
@@ -12,10 +16,12 @@ class ConnPool
 {
 public:
     virtual ~ConnPool();
-
-    Connection *GetConnection();
-    void ReleaseConnection(Connection *conn);
     static ConnPool *GetInstance();
+    bool ExecFormat(const char *query)
+    {
+        return Exec(query);
+    }
+    bool Exec(const char *query);
 
 private:
     int curSize;
@@ -32,6 +38,26 @@ private:
     void DestoryConnection(Connection *conn);
     void DestoryConnPool();
     bool ready;
+
+    Connection *GetConnection();
+    void ReleaseConnection(Connection *conn);
+
+    Statement *stmt;
+    ResultSet *res;
+
+    inline void Clear()
+    {
+        if (stmt)
+        {
+            delete stmt;
+            stmt = NULL;
+        }
+        if (res)
+        {
+            delete res;
+            res = NULL;
+        }
+    }
 
     ConnPool(string url,string user,string password,int maxSize);
 };

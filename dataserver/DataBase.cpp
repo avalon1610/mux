@@ -2,10 +2,7 @@
 #include "LogProc.h"
 #include "Configs.h"
 #include "Struct.h"
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
+
 
 using namespace std;
 using namespace sql;
@@ -184,7 +181,28 @@ void ConnPool::DestoryConnection(Connection *conn)
     }
 }
 
+bool ConnPool::Exec(const char *query)
+{
+    Clear();
+    try
+    {
+        Connection *conn = GetConnection();
+        stmt = conn->createStatement();
 
+        LOG(info) << "[SQL] " << query;
+        res = stmt->executeQuery(query);
+    }
+    catch (SQLException &e)
+    {
+        LOG(error) << "[SQL] error code:" << e.getErrorCode()
+            << "SQLState: " << e.getSQLState();
+        ReleaseConnection(conn);
+        return false;
+    }
+
+    ReleaseConnection(conn);
+    return true;
+}
 
 
 

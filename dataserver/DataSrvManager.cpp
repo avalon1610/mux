@@ -1,4 +1,5 @@
 #include "DataSrvManager.h"
+#include "DSProtocol.h"
 
 //DServerManager DS_SrvManager[];
 
