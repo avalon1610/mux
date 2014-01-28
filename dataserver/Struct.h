@@ -26,4 +26,13 @@ struct MAIN_STRUCT
     int DataSrv_Count;
 };
 
+enum QUERY_PROCESS_TYPES
+{
+    QUERY_NULL = -100,
+    QUERY_EOF = -101,
+    QUERY_NO_COLUMN = -102,
+    QUERY_ERROR = -103,
+    MAX_COLUMN = 100
+};
+
 #endif

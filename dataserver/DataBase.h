@@ -22,6 +22,8 @@ public:
         return Exec(query);
     }
     bool Exec(const char *query);
+    int GetInt(const char *col);
+    string GetString(const char *col);
 
 private:
     int curSize;
