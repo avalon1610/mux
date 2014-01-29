@@ -15,7 +15,7 @@ LINK_DIRECTORIES("${PROJECT_ROOT_PATH}/lib/")
 FILE(GLOB SOURCE_DATASERVER "${PROJECT_ROOT_PATH}/dataserver/*.cpp")
 ADD_DEFINITIONS(-DBOOST_LOG_DYN_LINK)
 ADD_EXECUTABLE(dataserver ${SOURCE_DATASERVER})
-TARGET_LINK_LIBRARIES(dataserver mysqlcppconn boost_system boost_filesystem boost_log boost_log_setup) 
+TARGET_LINK_LIBRARIES(dataserver mysqlcppconn boost_system boost_filesystem boost_log boost_log_setup)
 
 #FILE(GLOB SOURCE_GAMESERVER "${PROJECT_ROOT_PATH}/gameserver/*.cpp")
 #ADD_EXECUTABLE(gameserver ${SOURCE_GAMESERVER})

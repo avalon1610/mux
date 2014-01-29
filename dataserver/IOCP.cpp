@@ -2,7 +2,6 @@
 #include "LogProc.h"
 #include "JoinSrvManager.h"
 #include "DataSrvManager.h"
-#include "Struct.h"
 #include <cstring>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -80,11 +79,16 @@ void IOCP::Worker()
     while(1)
     {
         n = epoll_wait(efd,events,MAXEVENTS,-1);
+        if (n == -1)
+        {
+            LOG(error) << "[IOCP Worker] epoll_wait error";
+            abort();
+        }
+
         for (i = 0; i < n; ++i)
         {
             if ((events[i].events & EPOLLERR) ||
-                (events[i].events & EPOLLHUP) ||
-                (!(events[i].events & EPOLLIN)))
+                (events[i].events & EPOLLHUP))
             {
                 LOG(error) << "[IOCP Worker] epoll error";
                 close(events[i].data.fd);
@@ -97,7 +101,7 @@ void IOCP::Worker()
                 boost::thread conn_t(boost::bind(&IOCP::ListenWorker,this));
                 conn_t.join();
             }
-            else
+            else if (events[i].events & EPOLLIN)
             {
                 // We have data on the fd waiting to be read. Read and
                 // display it. We must read whatever data is available
@@ -105,6 +109,11 @@ void IOCP::Worker()
                 // and won't get a notification again for the same data.
                 boost::thread recv_t(boost::bind(&IOCP::RecvWorker,this));
                 recv_t.join();
+            }
+            else if (events[i].events & EPOLLOUT)
+            {
+                boost::thread send_t(boost::bind(&IOCP::SendWorker,this));
+                send_t.join();
             }
         }
     }
@@ -114,12 +123,13 @@ void IOCP::Worker()
 
 void IOCP::ListenWorker()
 {
+    struct sockaddr in_addr;
+    char hbuf[NI_MAXHOST],sbuf[NI_MAXSERV];
+    int ClientIndex = -1;
+    socklen_t in_len = sizeof in_addr;
+
     while(1)
     {
-        struct sockaddr in_addr;
-        char hbuf[NI_MAXHOST],sbuf[NI_MAXSERV];
-
-        socklen_t in_len = sizeof in_addr;
         int infd = accept(sfd,&in_addr,&in_len);
         if (infd == -1)
         {
@@ -148,31 +158,104 @@ void IOCP::ListenWorker()
         if (s == -1)
         {
             LOG(debug) << "[IOCP ListenWorker] make socket non blocking error";
-            abort();
+            CLOSE_CONTINUE(infd);
         }
+
+        ClientIndex = ServerAddSearch();
 
         struct epoll_event event;
         event.data.fd = infd;
         event.events = EPOLLIN|EPOLLET;
+
+        if (-1 == ServerAdd(ClientIndex,infd,&event,hbuf))
+        {
+            LOG(error) << "[IOCP ListenWorker] ServerAdd error";
+            CLOSE_CONTINUE(infd);
+        }
+
         s = epoll_ctl(efd,EPOLL_CTL_ADD,infd,&event);
         if (s == -1)
         {
             LOG(error) << "[IOCP ListenWorker] epoll_ctl error";
-            abort();
+            CLOSE_CONTINUE(infd);
         }
+    }
+}
+
+int IOCP::ServerAdd(int ServerIndex,int fd,epoll_event *ev,char *ip)
+{
+    int i = ServerIndex;
+    memcpy(Server[i].server_ip,ip,IP_SIZE);
+
+    Server[i].index = ServerIndex;
+    Server[i].status = SRVS_ONLINE;
+    Server[i].fd = fd;
+    epoll_event *event = &Server[i].SocketContext->event;
+    memcpy(event,ev,sizeof event);
+    AddedCount++;
+    return i;
+}
+
+void IOCP::ServerDel(int aIndex)
+{
+    int i = aIndex;
+    Server[i].index = -1;
+    Server[i].fd = -1;
+    Server[i].status = SRVS_OFFLINE;
+    memset(Server[i].server_ip,0,IP_SIZE);
+    AddedCount--;
+}
+
+int IOCP::ServerAddSearch()
+{
+    int ret = -1;
+    if (Server == NULL)
+        return ret;
+
+    for (int i = 0;i < MAX_OBJECT; ++i)
+    {
+        if (Server[i].index == -1)
+        {
+            ret = i;
+            break;
+        }
+    }
+
+    return ret;
+}
+
+void IOCP::SendWorker()
+{
+    epoll_event ev = events[i];
+    int data_size = ev.data.u32;
+    int nwrite;
+    int n = data_size;
+    while (n > 0)
+    {
+        nwrite = write(ev.data.fd,(char *)ev.data.ptr + data_size - n,n);
+        if (nwrite < n)
+        {
+           if (nwrite == -1 && errno != EAGAIN)
+           {
+                LOG(error) << "[IOCP SendWorker] write error" << errno;
+           }
+           break;
+        }
+
+        n -= nwrite;
     }
 }
 
 void IOCP::RecvWorker()
 {
     int done = 0;
+    ssize_t nread;
+    char buf[1024] = {0};
+    int n = 0;
     while(1)
     {
-        ssize_t count;
-        char buf[1024] = {0};
-
-        count = read(events[i].data.fd,buf,sizeof buf);
-        if (count == -1)
+        nread = read(events[i].data.fd,buf + n,sizeof buf - 1);
+        if (nread == -1)
         {
             // If errno == EAGAIN, that means we have read all
             // data. break to the main loop
@@ -183,20 +266,23 @@ void IOCP::RecvWorker()
             }
             break;
         }
-        else if (count == 0)
+        else if (nread == 0)
         {
             // End of file. The remote has closed the connection.
             done = 1;
             break;
         }
 
+        n += nread;
         // Writer the buffer to standard output
+        /*
         int s = write(1,buf,count);
         if (s == -1)
         {
             LOG(error) << "[IOCP RecvWorker] write error:" << errno;
             abort();
         }
+        */
     }
 
     if (done)
@@ -273,6 +359,43 @@ void IOCP::StartServer(UINT SrvType)
 
 }
 
-bool IOCP::DataSend(int aIndex,unsigned char *Msg,unsigned int size)
+void IOCP::CloseClient(int aIndex)
 {
+}
+
+bool IOCP::DataSend(int aIndex,unsigned char *msg,unsigned int size)
+{
+    ulong SendBytes = 0;
+    OBJECTSTRUCT *obj = &Server[aIndex];
+    SOCKET_CONTEXT *sc = obj->SocketContext;
+
+    if (aIndex < 0 || aIndex > MAX_OBJECT)
+    {
+        LOG(error) << "[IOCP] DataSend Index[" << aIndex << "] error.";
+        return false;
+    }
+
+    if (obj->status < SRVS_ONLINE)
+        return false;
+
+    if (size > sizeof sc->buffer)
+    {
+        LOG(error) << "[IOCP] DataSend msg overflow, size:" << size;
+        CloseClient(aIndex);
+        return false;
+    }
+
+    memcpy(sc->buffer,msg,size);
+
+    epoll_event ev;
+    ev.data.fd = obj->fd;
+    ev.events = sc->event.events | EPOLLOUT;
+    ev.data.u32 = size;
+    if (-1 == epoll_ctl(efd,EPOLL_CTL_MOD,obj->fd,&ev))
+    {
+        LOG(error) << "[IOCP DataSend] epoll_ctl error";
+        return false;
+    }
+
+    return true;
 }
