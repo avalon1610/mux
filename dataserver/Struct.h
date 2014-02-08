@@ -1,9 +1,12 @@
 #ifndef _STRUCT_H_
 #define _STRUCT_H_
-#include <string.h>
+#include <string>
+#include <sys/epoll.h>
+#include "Defines.h"
 
 using namespace std;
 typedef unsigned short WORD;
+typedef unsigned char BYTE;
 
 enum eSRV_TYPE
 {
@@ -24,6 +27,28 @@ struct MAIN_STRUCT
     WORD DataSrv_Port;
     int JoinSrv_UseMD5;
     int DataSrv_Count;
+};
+
+enum SERVER_STATUS
+{
+    SRVS_OFFLINE,
+    SRVS_ONLINE
+};
+
+struct SOCKET_CONTEXT
+{
+    BYTE buffer[MAX_IO_BUFFER_SIZE];
+    BYTE buffer_second[MAX_IO_BUFFER_SIZE];
+    epoll_event event;
+};
+
+struct OBJECTSTRUCT
+{
+    short index;
+    char server_ip[16];
+    SERVER_STATUS status;
+    int fd;
+    struct SOCKET_CONTEXT *SocketContext;
 };
 
 enum QUERY_PROCESS_TYPES
