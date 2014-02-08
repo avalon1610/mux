@@ -1,23 +1,22 @@
-#include "LogProc.h"
+#include "log.h"
+#include <string>
 
-/*
-Log::Log()
+using namespace std;
+using namespace boost;
+
+LOG::LOG()
 {
     InitLog();
     logging::add_common_attributes();
     using namespace logging::trivial;
     BOOST_LOG_SEV(lg,info) << "thread id: " << this_thread::get_id() << " Initialization succeeded";
 }
-*/
 
-/*
-Log::~Log()
+LOG::~LOG()
 {
 }
-*/
 
-/*
-void Log::InitLog()
+void LOG::InitLog()
 {
     string path = bf::canonical(bf::current_path()).string();
     logging::register_simple_formatter_factory<log::trivial::severity_level,char>("Severity");
@@ -30,4 +29,3 @@ void Log::InitLog()
     logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::debug);
     logging::add_console_log(cout,keywords::format="[%TimeStamp%](%Severity%):%Message%");
 }
-*/
