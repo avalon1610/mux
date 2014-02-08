@@ -3,11 +3,11 @@
 
 #include "boost.h"
 
-class LOG
+class CLOG
 {
 public:
-    LOG();
-    virtual ~LOG();
+    CLOG();
+    virtual ~CLOG();
 private:
     sources::severity_logger<logging::trivial::severity_level> lg;
     void InitLog();

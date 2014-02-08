@@ -4,7 +4,7 @@
 using namespace std;
 using namespace boost;
 
-LOG::LOG()
+CLOG::CLOG()
 {
     InitLog();
     logging::add_common_attributes();
@@ -12,11 +12,11 @@ LOG::LOG()
     BOOST_LOG_SEV(lg,info) << "thread id: " << this_thread::get_id() << " Initialization succeeded";
 }
 
-LOG::~LOG()
+CLOG::~CLOG()
 {
 }
 
-void LOG::InitLog()
+void CLOG::InitLog()
 {
     string path = bf::canonical(bf::current_path()).string();
     logging::register_simple_formatter_factory<log::trivial::severity_level,char>("Severity");

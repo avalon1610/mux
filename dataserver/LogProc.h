@@ -4,14 +4,11 @@
 //#include "boost.h"
 #include "../comm/log.h"
 
-class Log : public LOG
+class Log : public CLOG
 {
 public:
-    Log()
-    {
-       LOG();
-    }
-    ~Log();
+    Log(){}
+    ~Log(){};
 
 private:
     //sources::severity_logger<logging::trivial::severity_level> lg;
