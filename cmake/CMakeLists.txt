@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 2.8)
+PROJECT(mux)
+SET(CMAKE_BUILD_TYPE Debug)
+message(STATUS "Build with Debug Mode...")
+SET(CMAKE_CXX_FLAGS_DEBUG,"$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE,"$ENV{CXXFLAGS} -O3 -Wall")
+
+SET(PROJECT_ROOT_PATH "${CMAKE_SOURCE_DIR}/../")
+SET(EXECUTABLE_OUTPUT_PATH "${PROJECT_ROOT_PATH}/bin/")
+SET(LIBRARY_OUTPUT_PATH "${PROJECT_ROOT_PATH}/lib/")
+
+INCLUDE_DIRECTORIES("${PROJECT_ROOT_PATH}/include/")
+LINK_DIRECTORIES("${PROJECT_ROOT_PATH}/lib/")
+
+FILE(GLOB SOURCE_COMM "${PROJECT_ROOT_PATH}/comm/*.cpp")
+ADD_LIBRARY(comm STATIC ${SOURCE_COMM})
+TARGET_LINK_LIBRARIES(comm boost_system boost_filesystem boost_log boost_log_setup)
+
+FILE(GLOB SOURCE_DATASERVER "${PROJECT_ROOT_PATH}/dataserver/*.cpp")
+ADD_DEFINITIONS(-DBOOST_LOG_DYN_LINK)
+ADD_EXECUTABLE(dataserver ${SOURCE_DATASERVER})
+TARGET_LINK_LIBRARIES(dataserver comm mysqlcppconn boost_system boost_filesystem boost_log boost_log_setup)
+
+FILE(GLOB SOURCE_GAMESERVER "${PROJECT_ROOT_PATH}/gameserver/*.cpp")
+ADD_EXECUTABLE(gameserver ${SOURCE_GAMESERVER})
+TARGET_LINK_LIBRARIES(gameserver comm)
+
